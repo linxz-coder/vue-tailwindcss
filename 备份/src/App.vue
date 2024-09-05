@@ -58,13 +58,13 @@
           </div>
         </div>
 
-        <div class="flex flex-row-reverse" v-for="(message, index) in userMessages" :key="index">
+        <div class="flex flex-row-reverse">
           <div class='min-w-[40px] min-h-[40px]'>
             <img src="/me.png" class="rounded-full" width=40 height=40 alt="avatar" />
           </div>
           <div class="flex flex-col mr-3 ml-14">
             <div class="px-4 py-2 rounded-lg shadow-lg md:max-w-fit bg-green-500 text-white">
-              {{ message }}
+              我要一个AI
             </div>
           </div>
         </div>
@@ -74,9 +74,10 @@
 
       <!-- 底部输入框 -->
       <div class="w-full border-t p-4">
+        <!-- <TextInput @send="handleSendMessage" /> -->
         <el-input placeholder="请输入..." v-model="userInputValue">
           <template #append>
-            <el-button :icon="Promotion" @click="sendMessage" />
+            <el-button :icon="Promotion" />
           </template>
         </el-input>
       </div>
@@ -91,14 +92,36 @@ import { Search, Promotion } from '@element-plus/icons-vue'
 // 数据
 let userInputValue = ref('')
 let searchValue = ref('')
-let userMessages = ref([])
+
+// import { v4 as uuidv4 } from 'uuid'
+// import ChatHeader from './components/ChatHeader.vue'
+// import Message from './components/Message.vue'
+// import TextInput from './components/TextInput.vue'
+// import ChatItem from './components/ChatItem.vue'
+// import SearchInput from './components/SearchInput.vue'
+
+// 全局变量
+// const bjtime = new Date().toLocaleString()
+
+// ref 部分
+// const uuid = ref(uuidv4())
+// const sequenceRef = ref(0)
+// const titleCount = ref(1)
+
+// state 部分
+// const messages = ref([{ ssid: uuid.value, seq: sequenceRef.value, user: 'ai', content: "有什么可以帮你的？", timestamp: bjtime }])
+// const isProcessing = ref(false)
+// const activeChatId = ref(uuid.value)
+// const activeTitle = ref("对话1")
+// const searchQuery = ref('')
+// const filteredSSIDs = ref([])
+
+// 计算属性
+// const uniqueSSIDs = computed(() => [...new Set(messages.value.map(message => message.ssid))])
+// const displaySSIDs = computed(() => searchQuery.value ? filteredSSIDs.value : uniqueSSIDs.value)
+// const filteredMessages = computed(() => messages.value.filter(message => message.ssid === activeChatId.value))
 
 // 方法
-function sendMessage() {
-  userMessages.value.push(userInputValue.value)
-  userInputValue.value = ''
-}
-
 const startNewChat = () => {
   // 实现新建对话的逻辑
 }
