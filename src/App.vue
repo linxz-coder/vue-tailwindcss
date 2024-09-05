@@ -7,7 +7,7 @@
       <div class="flex items-center justify-between px-4 py-2">
         <h1 class="text-3xl font-bold text-pink-500">ChatFUN</h1>
         <!-- 开始新对话 -->
-        <el-button circle>
+        <el-button circle @click="startNewChat">
           <img src="/new.svg" width="20" height="20" alt="Start new chat" />
         </el-button>
       </div>
@@ -24,11 +24,9 @@
 
       <!-- 聊天列表 -->
       <div class="overflow-y-auto">
-        <div class="px-4 py-2 font-bold text-lg">
-          对话标题
-        </div>
-        <div class="px-4 py-2 text-sm">
-          最后一条消息
+        <div v-for="chat in chatList" :key="chat.id" class="px-4 py-2 cursor-pointer hover:bg-gray-100">
+          <div class="font-bold text-lg">{{ chat.title }}</div>
+          <div class="text-sm text-gray-500">{{ chat.lastMessage }}</div>
         </div>
       </div>
     </div>
@@ -37,21 +35,21 @@
     <div class="flex flex-1 flex-col bg-gray-100 h-screen">
       <!-- 聊天标题 -->
       <div class="p-6 border-b">
-        <h1 class="text-xl font-bold text-gray-500">对话标题</h1>
+        <h1 class="text-xl font-bold text-gray-500">{{ currentChatTitle }}</h1>
       </div>
 
       <!-- 消息列表 -->
       <div class="flex-1 overflow-auto p-4" ref="messageContainer">
         <div v-for="(message, index) in messages" :key="index"
-          :class="{ 'flex': true, 'flex-row-reverse': message.user === 'me' }">
+          :class="{ 'flex': true, 'flex-row-reverse': message.user === 'user' }">
           <div class='min-w-[40px] min-h-[40px]'>
             <img :src="message.user === 'ai' ? '/robot_ai.png' : '/me.png'" class="rounded-full" width=40 height=40
               alt="avatar" />
           </div>
           <div
-            :class="{ 'flex flex-col mr-14 ml-3 mb-5': message.user === 'ai', 'flex flex-col mr-3 ml-14 mb-5': message.user === 'me' }">
+            :class="{ 'flex flex-col mr-14 ml-3 mb-5': message.user === 'ai', 'flex flex-col mr-3 ml-14 mb-5': message.user === 'user' }">
             <div
-              :class="{ 'px-4 py-2 rounded-lg shadow-lg md:max-w-fit': true, 'bg-white text-black': message.user === 'ai', 'bg-green-500 text-white': message.user === 'me' }">
+              :class="{ 'px-4 py-2 rounded-lg shadow-lg md:max-w-fit': true, 'bg-white text-black': message.user === 'ai', 'bg-green-500 text-white': message.user === 'user' }">
               {{ message.content }}
             </div>
           </div>
@@ -71,43 +69,79 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Search, Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
+import { nanoid } from 'nanoid';
 
 // 数据
-let userInputValue = ref('')
-let searchValue = ref('')
-let messages = ref([])
-let isProcessing = ref(false)
-let isInitialized = ref(false)
+const userInputValue = ref('')
+const searchValue = ref('')
+const messages = ref([])
+const isProcessing = ref(false)
+const isInitialized = ref(false)
+const seq = ref(0)
+const currentChatId = ref(nanoid())
+const chatList = ref([])
+const currentChatTitle = ref('对话标题')
+
+
+// 计算属性
+const bjtime = computed(() => new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }))
 
 // 方法
+/* 开始新对话 */
+function startNewChat() {
+  currentChatId.value = nanoid()
+  seq.value = 0
+  messages.value = []
+  currentChatTitle.value = '新对话'
+  initializeChat()
+}
+
+/* 用户提交聊天并返回结果 */
 async function sendMessage() {
   if (userInputValue.value.trim() === '') return
 
   // 添加用户消息
-  messages.value.push({ user: 'me', content: userInputValue.value })
-  const userMessage = userInputValue.value
+  const userMessage = {
+    ssid: currentChatId.value,
+    seq: seq.value,
+    user: 'user',
+    content: userInputValue.value,
+    timestamp: bjtime.value
+  }
+  messages.value.push(userMessage)
+  const userMessageContent = userInputValue.value
   userInputValue.value = ''
+  seq.value++
 
   // 准备 AI 回复
-  isProcessing.value = true
-  messages.value.push({ user: 'ai', content: '' })
-
+  const aiMessage = {
+    ssid: currentChatId.value,
+    seq: seq.value,
+    user: 'ai',
+    content: '',
+    timestamp: bjtime.value
+  }
+  messages.value.push(aiMessage)
+  seq.value++
 
   // AI 回复
   try {
     const response = await axios.post('http://localhost:5328/api/python', {
-      content: userMessage,
+      content: userMessageContent,
       chatHistory: JSON.stringify(messages.value)
     }, {
       responseType: 'text',
       onDownloadProgress: progressEvent => {
         const dataChunk = progressEvent.event.target.response
-        messages.value[messages.value.length - 1].content += dataChunk
+        aiMessage.content += dataChunk
       }
     })
+
+    // 更新聊天列表
+    updateChatList()
   } catch (error) {
     console.error('Error:', error)
     messages.value[messages.value.length - 1].content = '抱歉，发生了错误。请稍后再试。'
@@ -118,11 +152,39 @@ async function sendMessage() {
 
 // 初始化聊天
 function initializeChat() {
-  messages.value.push({ user: 'ai', content: '你好，有什么可以帮助你的。' })
+  const initialMessage = {
+    ssid: nanoid(),
+    seq: seq.value,
+    user: 'ai',
+    content: '你好，有什么可以帮助你的？',
+    timestamp: bjtime.value
+  }
+  messages.value.push(initialMessage)
+  console.log('初始化聊天', messages.value)
+  currentChatId.value = initialMessage.ssid
+  seq.value++ // 增加seq
+  updateChatList()
+}
+
+// 更新聊天列表
+function updateChatList() {
+  const existingChatIndex = chatList.value.findIndex(chat => chat.id === currentChatId.value)
+  const lastMessage = messages.value[messages.value.length - 1].content
+
+  if (existingChatIndex !== -1) {
+    chatList.value[existingChatIndex].lastMessage = lastMessage
+  } else {
+    chatList.value.unshift({
+      id: currentChatId.value,
+      title: currentChatTitle.value,
+      lastMessage: lastMessage
+    })
+  }
 }
 
 // 生命周期钩子
 onMounted(() => {
+  console.log('App.vue mounted')
   // 初始化聊天
   initializeChat()
 })
