@@ -45,38 +45,28 @@
       </div>
 
       <!-- 消息列表 -->
-      <div class="flex-1 overflow-auto p-4">
-
-        <div class="flex">
+      <div class="flex-1 overflow-auto p-4" ref="messageContainer">
+        <div v-for="(message, index) in messages" :key="index"
+          :class="{ 'flex': true, 'flex-row-reverse': message.user === 'me' }">
           <div class='min-w-[40px] min-h-[40px]'>
-            <img src="/robot_ai.png" class="rounded-full" width=40 height=40 alt="avatar" />
+            <img :src="message.user === 'ai' ? '/robot_ai.png' : '/me.png'" class="rounded-full" width=40 height=40
+              alt="avatar" />
           </div>
-          <div class="flex flex-col mr-14 ml-3">
-            <div class="px-4 py-2 rounded-lg shadow-lg md:max-w-fit bg-white text-black">
-              你好呀
+          <div
+            :class="{ 'flex flex-col mr-14 ml-3 mb-5': message.user === 'ai', 'flex flex-col mr-3 ml-14 mb-5': message.user === 'me' }">
+            <div
+              :class="{ 'px-4 py-2 rounded-lg shadow-lg md:max-w-fit': true, 'bg-white text-black': message.user === 'ai', 'bg-green-500 text-white': message.user === 'me' }">
+              {{ message.content }}
             </div>
           </div>
         </div>
-
-        <div class="flex flex-row-reverse" v-for="(message, index) in userMessages" :key="index">
-          <div class='min-w-[40px] min-h-[40px]'>
-            <img src="/me.png" class="rounded-full" width=40 height=40 alt="avatar" />
-          </div>
-          <div class="flex flex-col mr-3 ml-14">
-            <div class="px-4 py-2 rounded-lg shadow-lg md:max-w-fit bg-green-500 text-white">
-              {{ message }}
-            </div>
-          </div>
-        </div>
-        <!-- <Message v-for="(message, index) in filteredMessages" :key="index" :user="message.user === 'user'"
-          :content="message.content" /> -->
       </div>
 
       <!-- 底部输入框 -->
       <div class="w-full border-t p-4">
-        <el-input placeholder="请输入..." v-model="userInputValue">
+        <el-input placeholder="请输入..." v-model="userInputValue" @keyup.enter="sendMessage" :disabled="isProcessing">
           <template #append>
-            <el-button :icon="Promotion" @click="sendMessage" />
+            <el-button :icon="Promotion" @click="sendMessage" :disabled="isProcessing" />
           </template>
         </el-input>
       </div>
@@ -85,35 +75,71 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import { Search, Promotion } from '@element-plus/icons-vue'
+import axios from 'axios'
 
 // 数据
 let userInputValue = ref('')
 let searchValue = ref('')
-let userMessages = ref([])
+let messages = ref([])
+let isProcessing = ref(false)
 
 // 方法
-function sendMessage() {
-  userMessages.value.push(userInputValue.value)
+async function sendMessage() {
+  if (userInputValue.value.trim() === '') return
+
+  // 添加用户消息
+  messages.value.push({ user: 'me', content: userInputValue.value })
+  const userMessage = userInputValue.value
   userInputValue.value = ''
+
+  // 准备 AI 回复
+  isProcessing.value = true
+  messages.value.push({ user: 'ai', content: '' })
+
+
+  // AI 回复
+  try {
+    const response = await axios.post('http://localhost:5328/api/python', {
+      content: userMessage,
+      chatHistory: JSON.stringify(messages.value)
+    }, {
+      responseType: 'text',
+      onDownloadProgress: progressEvent => {
+        const dataChunk = progressEvent.event.target.response
+        messages.value[messages.value.length - 1].content += dataChunk
+      }
+    })
+  } catch (error) {
+    console.error('Error:', error)
+    messages.value[messages.value.length - 1].content = '抱歉，发生了错误。请稍后再试。'
+  } finally {
+    isProcessing.value = false
+  }
 }
 
-const startNewChat = () => {
-  // 实现新建对话的逻辑
-}
+// 生命周期钩子
+onMounted(async () => {
+  // 发送默认消息
+  messages.value.push({ user: 'ai', content: '' })
+  try {
+    const response = await axios.post('http://localhost:5328/api/python', {
+      content: '',
+      chatHistory: '[]'
+    }, {
+      responseType: 'text',
+      onDownloadProgress: progressEvent => {
+        const dataChunk = progressEvent.event.target.response
+        messages.value[0].content += dataChunk
+      }
+    })
+  } catch (error) {
+    console.error('Error:', error)
+    messages.value[0].content = '你好，有什么可以帮助你的。'
+  }
+})
 
-const handleSearch = (query) => {
-  // 实现搜索功能
-}
-
-const switchChat = (ssid, title) => {
-  // 实现切换对话的逻辑
-}
-
-const handleSendMessage = (text) => {
-  // 实现发送消息的逻辑
-}
 </script>
 
 <style scoped></style>
