@@ -30,9 +30,6 @@
         <div class="px-4 py-2 text-sm">
           最后一条消息
         </div>
-        <!-- <ChatItem v-for="(ssid, index) in displaySSIDs" :key="index" :ssid="ssid"
-          :title="`对话${uniqueSSIDs.indexOf(ssid) + 1}`" :messages="messages.filter(message => message.ssid === ssid)"
-          :isActive="ssid === activeChatId" @click="switchChat(ssid, `对话${uniqueSSIDs.indexOf(ssid) + 1}`)" /> -->
       </div>
     </div>
 
@@ -41,7 +38,6 @@
       <!-- 聊天标题 -->
       <div class="p-6 border-b">
         <h1 class="text-xl font-bold text-gray-500">对话标题</h1>
-        <!-- <ChatHeader :chatTitle="activeTitle" /> -->
       </div>
 
       <!-- 消息列表 -->
@@ -84,6 +80,7 @@ let userInputValue = ref('')
 let searchValue = ref('')
 let messages = ref([])
 let isProcessing = ref(false)
+let isInitialized = ref(false)
 
 // 方法
 async function sendMessage() {
@@ -119,25 +116,15 @@ async function sendMessage() {
   }
 }
 
+// 初始化聊天
+function initializeChat() {
+  messages.value.push({ user: 'ai', content: '你好，有什么可以帮助你的。' })
+}
+
 // 生命周期钩子
-onMounted(async () => {
-  // 发送默认消息
-  messages.value.push({ user: 'ai', content: '' })
-  try {
-    const response = await axios.post('http://localhost:5328/api/python', {
-      content: '',
-      chatHistory: '[]'
-    }, {
-      responseType: 'text',
-      onDownloadProgress: progressEvent => {
-        const dataChunk = progressEvent.event.target.response
-        messages.value[0].content += dataChunk
-      }
-    })
-  } catch (error) {
-    console.error('Error:', error)
-    messages.value[0].content = '你好，有什么可以帮助你的。'
-  }
+onMounted(() => {
+  // 初始化聊天
+  initializeChat()
 })
 
 </script>
