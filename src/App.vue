@@ -2,14 +2,27 @@
 
   <div class="flex h-screen">
     <!-- 左侧区块 -->
-    <div class="bg-white overflow-auto h-screen relative hidden md:block md:w-[300px]" id="leftSidebar">
+    <div :class="[
+      'bg-white overflow-auto h-screen transition-all duration-300 ease-in-out',
+      isSidebarOpen ? 'w-[200px]' : 'w-0',
+      'absolute md:relative md:w-[300px]'
+    ]" id="leftSidebar">
       <!-- 头部 -->
       <div class="flex items-center justify-between px-4 py-2">
         <h1 class="text-3xl font-bold text-pink-500">ChatFUN</h1>
         <!-- 开始新对话 -->
-        <el-button circle @click="startNewChat">
-          <img src="/new.svg" width="20" height="20" alt="Start new chat" />
-        </el-button>
+        <div class="hidden md:block">
+          <el-button circle @click="startNewChat">
+            <img src="/new.svg" width="20" height="20" alt="Start new chat" />
+          </el-button>
+        </div>
+        <div class="md:hidden">
+          <el-button circle @click="toggleSidebar">
+            <el-icon>
+              <Close />
+            </el-icon>
+          </el-button>
+        </div>
       </div>
 
       <!-- 搜索框 -->
@@ -34,8 +47,20 @@
     <!-- 右侧区块 -->
     <div class="flex flex-1 flex-col bg-gray-100 h-screen">
       <!-- 聊天标题 -->
-      <div class="p-6 border-b">
-        <h1 class="text-xl font-bold text-gray-500">{{ currentChatTitle }}</h1>
+      <div class="p-4 border-b flex items-center justify-between">
+        <div :class="[isSidebarOpen ? 'hidden' : 'block', 'md:hidden']">
+          <el-button circle @click="toggleSidebar">
+            <el-icon>
+              <More />
+            </el-icon>
+          </el-button>
+        </div>
+        <h1 class="text-xl font-bold text-gray-500 flex-grow text-center">{{ currentChatTitle }}</h1>
+        <el-button circle @click="startNewChat">
+          <el-icon>
+            <Plus />
+          </el-icon>
+        </el-button>
       </div>
 
       <!-- 消息列表 -->
@@ -69,7 +94,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, onUnmounted } from 'vue'
 import { Search, Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { nanoid } from 'nanoid';
@@ -84,12 +109,18 @@ const seq = ref(0)
 const currentChatId = ref(nanoid())
 const chatList = ref([])
 const currentChatTitle = ref('对话标题')
+const isSidebarOpen = ref(false)
 
 
 // 计算属性
 const bjtime = computed(() => new Date().toLocaleString('zh-CN', { timeZone: 'Asia/Shanghai' }))
 
 // 方法
+/* 切换侧边栏 */
+function toggleSidebar() {
+  isSidebarOpen.value = !isSidebarOpen.value
+}
+
 /* 开始新对话 */
 function startNewChat() {
   currentChatId.value = nanoid()
@@ -182,10 +213,8 @@ function updateChatList() {
   }
 }
 
-// 生命周期钩子
+
 onMounted(() => {
-  console.log('App.vue mounted')
-  // 初始化聊天
   initializeChat()
 })
 
