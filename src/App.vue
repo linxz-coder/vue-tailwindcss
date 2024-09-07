@@ -56,11 +56,13 @@
           </el-button>
         </div>
         <h1 class="text-xl font-bold text-gray-500 flex-grow text-center">{{ currentChatTitle }}</h1>
-        <el-button circle @click="startNewChat">
-          <el-icon>
-            <Plus />
-          </el-icon>
-        </el-button>
+        <div class="md:hidden">
+          <el-button circle @click="startNewChat">
+            <el-icon>
+              <Plus />
+            </el-icon>
+          </el-button>
+        </div>
       </div>
 
       <!-- 消息列表 -->
@@ -166,10 +168,17 @@ async function sendMessage() {
     }, {
       responseType: 'text',
       onDownloadProgress: progressEvent => {
-        const dataChunk = progressEvent.event.target.response
-        aiMessage.content += dataChunk
+        const responseText = progressEvent.event.target.responseText;
+        if (responseText) {
+          // 只获取新的内容
+          const newContent = responseText.slice(aiMessage.content.length);
+          aiMessage.content += newContent;
+
+          // 触发视图更新
+          messages.value = [...messages.value];
+        }
       }
-    })
+    });
 
     // 更新聊天列表
     updateChatList()
@@ -201,14 +210,16 @@ function initializeChat() {
 function updateChatList() {
   const existingChatIndex = chatList.value.findIndex(chat => chat.id === currentChatId.value)
   const lastMessage = messages.value[messages.value.length - 1].content
+  // 显示20个字符
+  const displayedMessage = lastMessage.length > 20 ? lastMessage.substring(0, 20) + "..." : lastMessage;
 
   if (existingChatIndex !== -1) {
-    chatList.value[existingChatIndex].lastMessage = lastMessage
+    chatList.value[existingChatIndex].lastMessage = displayedMessage
   } else {
     chatList.value.unshift({
       id: currentChatId.value,
       title: currentChatTitle.value,
-      lastMessage: lastMessage
+      lastMessage: displayedMessage
     })
   }
 }
