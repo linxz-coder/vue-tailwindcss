@@ -45,7 +45,7 @@
     </div>
 
     <!-- 右侧区块 -->
-    <div class="flex flex-1 flex-col bg-gray-100 h-screen">
+    <div class="flex flex-1 flex-col bg-gray-100 h-screen" ref="chatContainer">
       <!-- 聊天标题 -->
       <div class="p-4 border-b flex items-center justify-between">
         <div :class="[isSidebarOpen ? 'hidden' : 'block', 'md:hidden']">
@@ -84,8 +84,9 @@
       </div>
 
       <!-- 底部输入框 -->
-      <div class="w-full border-t p-4">
-        <el-input placeholder="请输入..." v-model="userInputValue" @keyup.enter="sendMessage" :disabled="isProcessing">
+      <div class="border-t p-4">
+        <el-input size=large placeholder="请输入..." v-model="userInputValue" @keyup.enter="sendMessage"
+          :disabled="isProcessing">
           <template #append>
             <el-button :icon="Promotion" @click="sendMessage" :disabled="isProcessing" />
           </template>
@@ -106,12 +107,13 @@ const userInputValue = ref('')
 const searchValue = ref('')
 const messages = ref([])
 const isProcessing = ref(false)
-const isInitialized = ref(false)
+// const isInitialized = ref(false)
 const seq = ref(0)
 const currentChatId = ref(nanoid())
 const chatList = ref([])
 const currentChatTitle = ref('对话标题')
 const isSidebarOpen = ref(false)
+const chatContainer = ref(null);
 
 
 // 计算属性
@@ -224,11 +226,21 @@ function updateChatList() {
   }
 }
 
+// 处理移动端窗口大小变化
+const handleResize = () => {
+  if (chatContainer.value) {
+    chatContainer.value.style.height = `${window.innerHeight}px`;
+  }
+};
 
 onMounted(() => {
-  initializeChat()
+  initializeChat();
+  handleResize();
 })
 
+
+
 </script>
+
 
 <style scoped></style>
