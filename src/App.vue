@@ -45,7 +45,7 @@
     </div>
 
     <!-- 右侧区块 -->
-    <div class="flex flex-1 flex-col bg-gray-100 h-screen" ref="chatContainer">
+    <div class="flex flex-1 flex-col bg-gray-100 h-screen">
       <!-- 聊天标题 -->
       <div class="p-4 border-b flex items-center justify-between">
         <div :class="[isSidebarOpen ? 'hidden' : 'block', 'md:hidden']">
@@ -66,15 +66,15 @@
       </div>
 
       <!-- 消息列表 -->
-      <div class="flex-1 overflow-auto p-4" ref="messageContainer">
+      <div class="flex-1 overflow-auto p-4">
         <div v-for="(message, index) in messages" :key="index"
-          :class="{ 'flex': true, 'flex-row-reverse': message.user === 'user' }">
+          :class="['flex', { 'flex-row-reverse': message.user === 'user' }]">
           <div class='min-w-[40px] min-h-[40px]'>
             <img :src="message.user === 'ai' ? '/robot_ai.png' : '/me.png'" class="rounded-full" width=40 height=40
               alt="avatar" />
           </div>
           <div
-            :class="{ 'flex flex-col mr-14 ml-3 mb-5': message.user === 'ai', 'flex flex-col mr-3 ml-14 mb-5': message.user === 'user' }">
+            :class="{ 'flex flex-col mb-5': true, 'mr-14 ml-3': message.user === 'ai', 'mr-3 ml-14': message.user === 'user' }">
             <div
               :class="{ 'px-4 py-2 rounded-lg shadow-lg md:max-w-fit': true, 'bg-white text-black': message.user === 'ai', 'bg-green-500 text-white': message.user === 'user' }">
               {{ message.content }}
