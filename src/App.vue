@@ -77,7 +77,13 @@
             :class="{ 'flex flex-col mb-5': true, 'mr-14 ml-3': message.user === 'ai', 'mr-3 ml-14': message.user === 'user' }">
             <div
               :class="{ 'px-4 py-2 rounded-lg shadow-lg md:max-w-fit': true, 'bg-white text-black': message.user === 'ai', 'bg-green-500 text-white': message.user === 'user' }">
-              {{ message.content }}
+              <div v-if="message.user === 'ai'">
+                <div v-for="(part, partIndex) in parseMessage(message.content)" :key="partIndex">
+                  <highlightjs v-if="part.isCode" :code="part.content" :language="part.language" />
+                  <span v-else v-html="part.content"></span>
+                </div>
+              </div>
+              <span v-else>{{ message.content }}</span>
             </div>
           </div>
         </div>
@@ -97,7 +103,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted, computed, onUnmounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import { Search, Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 import { nanoid } from 'nanoid';
@@ -164,7 +170,7 @@ async function sendMessage() {
 
   // AI 回复
   try {
-    const response = await axios.post('http://localhost:5328/api/python', {
+    const response = await axios.post('https://www.commonlearner.com:5328/api/python', {
       content: userMessageContent,
       chatHistory: JSON.stringify(messages.value)
     }, {
@@ -208,6 +214,43 @@ function initializeChat() {
   updateChatList()
 }
 
+// 代码显示
+function parseMessage(message) {
+  const parts = []
+  const codeBlockRegex = /```(\w+)?\n([\s\S]*?)```/g
+  let lastIndex = 0
+  let match
+
+  while ((match = codeBlockRegex.exec(message)) !== null) {
+    // Add text before code block
+    if (match.index > lastIndex) {
+      parts.push({
+        isCode: false,
+        content: message.slice(lastIndex, match.index).replace(/\n/g, '<br>')
+      })
+    }
+
+    // Add code block
+    parts.push({
+      isCode: true,
+      language: match[1] || 'plaintext',
+      content: match[2].trim()
+    })
+
+    lastIndex = match.index + match[0].length
+  }
+
+  // Add remaining text after last code block
+  if (lastIndex < message.length) {
+    parts.push({
+      isCode: false,
+      content: message.slice(lastIndex).replace(/\n/g, '<br>')
+    })
+  }
+
+  return parts
+}
+
 // 更新聊天列表
 function updateChatList() {
   const existingChatIndex = chatList.value.findIndex(chat => chat.id === currentChatId.value)
@@ -243,4 +286,12 @@ onMounted(() => {
 </script>
 
 
-<style scoped></style>
+<style scoped>
+/* 你可能需要添加一些样式来优化代码块的显示 */
+:deep(.hljs) {
+  padding: 1em;
+  border-radius: 5px;
+  font-size: 0.9em;
+  overflow-x: auto;
+}
+</style>
